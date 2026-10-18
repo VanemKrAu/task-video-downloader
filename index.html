@@ -242,7 +242,7 @@
 
   <button class="go" id="goBtn">开始下载</button>
   <div class="under">
-    <button class="linkbtn" id="openBtn">直接打开</button>
+    <button class="linkbtn" id="openBtn">查看原始响应</button>
   </div>
 
   <div class="prog" id="prog"><i id="progInner"></i></div>
@@ -494,7 +494,7 @@
     if(!list.length){stat('先贴一条链接','err');return;}
     if(list.length>1){stat('一次只能打开一个，你贴了 '+list.length+' 条','err');return;}
     window.open(list[0].target,'_blank','noopener');
-    stat('已在新标签打开。这样不带密钥，多半会被挡回来','');
+    stat('已打开原始地址。这条请求不带密钥，正常情况下就是一句 401，用来看服务端到底怎么回的','');
   });
 
   $('pasteBtn').addEventListener('click',function(){
