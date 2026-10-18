@@ -1,0 +1,522 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="color-scheme" content="dark">
+<meta name="theme-color" content="#0a0a0b">
+<title>视频取回</title>
+<style>
+  :root{
+    --ink:#0a0a0b;
+    --ink2:#121214;
+    --line:#1f1f24;
+    --line2:#2a2a31;
+    --text:#ededec;
+    --body:#a9a9ae;
+    --muted:#6c6c75;
+    --gold:#e8c07d;
+    --ok:#7bd3a3;
+    --bad:#e88b8b;
+    --mono:ui-monospace,SFMono-Regular,"SF Mono",Menlo,Consolas,"Liberation Mono",monospace;
+  }
+  *{box-sizing:border-box;-webkit-tap-highlight-color:transparent}
+  html{-webkit-text-size-adjust:100%}
+  body{
+    margin:0; background:var(--ink); color:var(--text);
+    font-family:-apple-system,BlinkMacSystemFont,"Segoe UI","PingFang SC","Hiragino Sans GB","Microsoft YaHei",sans-serif;
+    font-size:15px; line-height:1.62;
+    padding:0 22px calc(72px + env(safe-area-inset-bottom));
+    max-width:620px; margin:0 auto;
+    position:relative; overflow-x:hidden;
+  }
+  body::before{
+    content:""; position:fixed; top:-220px; left:-120px; width:520px; height:520px;
+    background:radial-gradient(circle, rgba(232,192,125,.07), rgba(232,192,125,0) 62%);
+    pointer-events:none; z-index:0;
+  }
+  main{position:relative;z-index:1}
+
+  /* ---------- 顶栏 ---------- */
+  header{
+    display:flex; align-items:center; justify-content:space-between;
+    padding:26px 0 0; margin-bottom:64px;
+  }
+  .brand{display:flex;align-items:center;gap:9px;font-size:12.5px;letter-spacing:.08em;color:var(--muted)}
+  .dot{width:5px;height:5px;border-radius:50%;background:var(--gold);box-shadow:0 0 10px rgba(232,192,125,.8);transition:.3s}
+  .dot.off{background:#3a3a41;box-shadow:none}
+  .gear{
+    background:none;border:none;color:var(--muted);font-size:12.5px;letter-spacing:.06em;
+    padding:6px 0;cursor:pointer;transition:color .2s;
+  }
+  .gear:hover{color:var(--text)}
+
+  /* ---------- 头图区 ---------- */
+  h1{
+    font-size:clamp(30px,8.4vw,38px); font-weight:600; line-height:1.14;
+    letter-spacing:-.035em; margin:0 0 14px;
+  }
+  .lede{color:var(--muted);font-size:14.5px;line-height:1.7;margin:0 0 46px;max-width:26em}
+
+  /* ---------- 输入 ---------- */
+  .lbl{
+    display:block;font-size:11.5px;letter-spacing:.1em;color:#5f5f68;
+    margin:0 0 11px;text-transform:uppercase;
+  }
+  textarea{
+    display:block;width:100%;min-height:112px;resize:vertical;
+    background:var(--ink2); color:var(--text);
+    border:none; border-bottom:1px solid var(--line2); border-radius:9px 9px 0 0;
+    padding:16px 15px; font-family:var(--mono); font-size:12.5px; line-height:1.7;
+    transition:background .2s,border-color .25s;
+  }
+  textarea::placeholder{color:#4a4a52}
+  textarea:focus{outline:none;background:#151518;border-bottom-color:var(--gold)}
+  input[type=text],input[type=password]{
+    display:block;width:100%;background:var(--ink2);color:var(--text);
+    border:1px solid var(--line);border-radius:8px;padding:12px 13px;
+    font-size:13.5px;font-family:var(--mono);transition:border-color .2s,background .2s;
+  }
+  input[type=text]:focus,input[type=password]:focus{outline:none;border-color:var(--gold);background:#151518}
+  input::placeholder{color:#4a4a52}
+
+  .tools{display:flex;gap:4px;margin-top:12px}
+  .linkbtn{
+    background:none;border:none;color:var(--muted);font-size:12.5px;
+    padding:6px 12px 6px 0;cursor:pointer;transition:color .18s;font-family:inherit;
+  }
+  .linkbtn:hover{color:var(--gold)}
+
+  /* ---------- 识别结果 ---------- */
+  #parsed{margin-top:26px}
+  .res{border-left:1px solid var(--gold);padding:2px 0 2px 16px;margin-bottom:18px}
+  .res.bad{border-left-color:var(--bad)}
+  .res .line{display:flex;gap:14px;font-size:12.5px;line-height:1.9}
+  .res .k{color:#5f5f68;flex:0 0 52px}
+  .res .v{color:#c6c6c5;font-family:var(--mono);word-break:break-all;flex:1;font-size:11.5px;line-height:1.75}
+  .res .v.tap{cursor:pointer;border-bottom:1px dashed rgba(255,255,255,.16);padding-bottom:1px}
+  .res .v.tap:active{color:var(--gold);border-bottom-color:var(--gold)}
+  .res .v.em{color:var(--text)}
+
+  /* ---------- 设置 ---------- */
+  details{margin-top:52px;border-top:1px solid var(--line);padding-top:22px}
+  summary{
+    list-style:none;cursor:pointer;user-select:none;
+    font-size:12.5px;letter-spacing:.06em;color:var(--muted);transition:color .2s;
+    display:flex;align-items:center;gap:8px;
+  }
+  summary::-webkit-details-marker{display:none}
+  summary:hover{color:var(--text)}
+  summary::after{content:"›";font-size:15px;color:#4a4a52;transition:transform .25s;margin-left:8px}
+  .state{margin-left:auto;font-size:11.5px;letter-spacing:.04em;color:#5f5f68;transition:color .25s}
+  .state.on{color:var(--gold)}
+  details[open] summary::after{transform:rotate(90deg)}
+  .cfg{margin-top:24px}
+  .cfg .grp{margin-bottom:22px}
+  .cfg .grp:last-child{margin-bottom:0}
+  .cfg .hint{font-size:12px;color:#4f4f57;margin-top:9px;line-height:1.65}
+  .pw{position:relative}
+  .pw input{padding-right:62px}
+  .pw button{
+    position:absolute;right:4px;top:50%;transform:translateY(-50%);
+    background:none;border:none;color:var(--muted);font-size:12px;
+    padding:8px 10px;cursor:pointer;font-family:inherit;
+  }
+  .pw button:hover{color:var(--gold)}
+
+  /* ---------- 主按钮 ---------- */
+  .go{
+    width:100%;height:54px;margin-top:44px;
+    background:var(--text);color:var(--ink);border:none;border-radius:9px;
+    font-family:inherit;font-size:15px;font-weight:600;letter-spacing:.01em;
+    cursor:pointer;transition:background .18s,transform .1s,opacity .2s;
+  }
+  .go:hover{background:#fff}
+  .go:active{transform:translateY(1px)}
+  .go:disabled{cursor:default;transform:none}
+  .go:disabled:not(.busy){opacity:.35}
+  .go.busy{background:#191a1d;color:var(--gold);box-shadow:inset 0 0 0 1px rgba(232,192,125,.3)}
+
+  .under{display:flex;justify-content:center;margin-top:14px}
+
+  /* ---------- 状态 ---------- */
+  .prog{height:2px;background:var(--line);margin-top:26px;overflow:hidden;display:none}
+  .prog.on{display:block}
+  .prog i{display:block;height:100%;width:0;background:var(--gold);transition:width .25s ease}
+
+  .stat{
+    margin-top:18px;font-size:13px;line-height:1.65;color:var(--body);
+    display:none;word-break:break-word;
+  }
+  .stat.on{display:block}
+  .stat.ok{color:var(--ok)}
+  .stat.err{color:var(--bad)}
+  .stat .meta{color:#55555d;font-size:12px;margin-top:4px}
+
+  /* ---------- 历史 ---------- */
+  .hist{margin-top:60px}
+  .hist h2{font-size:11.5px;letter-spacing:.1em;color:#5f5f68;font-weight:400;margin:0 0 4px}
+  .hist .row{
+    display:flex;align-items:baseline;gap:14px;
+    padding:11px 0;border-bottom:1px solid #16161a;font-size:12.5px;
+  }
+  .hist .row:last-child{border-bottom:none}
+  .hist .id{font-family:var(--mono);color:#8e8e94;flex:1;word-break:break-all;font-size:11.5px}
+  .hist .sz,.hist .tm{color:#4f4f57;font-family:var(--mono);font-size:11px;white-space:nowrap}
+
+  footer{margin-top:64px;text-align:center;color:#3c3c43;font-size:11.5px;letter-spacing:.04em}
+
+  /* ---------- 入场 ---------- */
+  @keyframes rise{from{opacity:0;transform:translateY(7px)}to{opacity:1;transform:none}}
+  header,h1,.lede,.field,.go,.under{animation:rise .55s cubic-bezier(.22,.7,.28,1) backwards}
+  header{animation-delay:.02s}
+  h1{animation-delay:.06s}
+  .lede{animation-delay:.1s}
+  .field{animation-delay:.14s}
+  .go{animation-delay:.32s}
+  .under{animation-delay:.36s}
+  @media (max-width:520px){textarea{resize:none}}
+  @media (prefers-reduced-motion:reduce){*{animation:none!important;transition:none!important}}
+</style>
+</head>
+<body>
+<main>
+
+  <header>
+    <div class="brand"><span class="dot off" id="dot"></span>视频取回</div>
+    <button class="gear" id="gearBtn">设置</button>
+  </header>
+
+  <h1>把视频<br>拿回来</h1>
+  <p class="lede">贴一条日志里的链接，认得出任务号，带上你的密钥去取文件。密钥只留在这台设备上。</p>
+
+  <div class="field">
+    <label class="lbl" for="links">链接</label>
+    <textarea id="links" spellcheck="false" placeholder="GET https://api.huanling.icu/v2/video_generation/task_xxxxxxxx/content   Status: 401"></textarea>
+    <div class="tools">
+      <button class="linkbtn" id="pasteBtn">从剪贴板粘贴</button>
+      <button class="linkbtn" id="clearBtn">清空</button>
+    </div>
+  </div>
+
+  <div id="parsed"></div>
+
+  <details id="cfgBox">
+    <summary>密钥与代理<span class="state" id="cfgState">待填写</span></summary>
+    <div class="cfg">
+      <div class="grp">
+        <label class="lbl" for="apiKey">API Key</label>
+        <div class="pw">
+          <input type="password" id="apiKey" placeholder="sk-..." autocomplete="off" spellcheck="false">
+          <button id="eyeBtn">显示</button>
+        </div>
+      </div>
+      <div class="grp">
+        <label class="lbl" for="workerUrl">代理地址</label>
+        <input type="text" id="workerUrl" placeholder="https://xxxx.workers.dev" spellcheck="false" autocomplete="off">
+        <div class="hint">浏览器跨域会被拦，需要一个转发。部署方法见仓库 README，填一次就记住了。</div>
+      </div>
+    </div>
+  </details>
+
+  <button class="go" id="goBtn">开始下载</button>
+  <div class="under">
+    <button class="linkbtn" id="openBtn">直接打开</button>
+  </div>
+
+  <div class="prog" id="prog"><i id="progInner"></i></div>
+  <div class="stat" id="stat"></div>
+
+  <div class="hist" id="histBox" style="display:none">
+    <h2>最近取回</h2>
+    <div id="histList"></div>
+  </div>
+
+  <footer>无后端，无账号，无追踪</footer>
+</main>
+
+<script>
+(function(){
+  'use strict';
+
+  var LS_KEY='tvd_key', LS_WORKER='tvd_worker', LS_HIS='tvd_history';
+  var $=function(id){return document.getElementById(id);};
+
+  var elLinks=$('links'), elParsed=$('parsedWrap')||$('parsed'), elKey=$('apiKey'),
+      elWorker=$('workerUrl'), elStat=$('stat'), elProg=$('prog'),
+      elProgInner=$('progInner'), elGo=$('goBtn'), elOpen=$('openBtn'),
+      elEye=$('eyeBtn'), elDot=$('dot'), elCfg=$('cfgBox');
+
+  var parsedList=[];
+
+  function lsGet(k,d){try{var v=localStorage.getItem(k);return v===null?d:v;}catch(e){return d;}}
+  function lsSet(k,v){try{localStorage.setItem(k,v);}catch(e){}}
+
+  elKey.value=lsGet(LS_KEY,'');
+  elWorker.value=lsGet(LS_WORKER,'');
+  elKey.addEventListener('input',function(){lsSet(LS_KEY,elKey.value.trim());paintDot();});
+  elWorker.addEventListener('input',function(){lsSet(LS_WORKER,elWorker.value.trim());paintDot();});
+
+  function paintDot(){
+    var ready=elKey.value.trim() && elWorker.value.trim();
+    elDot.className='dot'+(ready?'':' off');
+    var st=$('cfgState');
+    if(st){ st.textContent=ready?'已配置':'待填写'; st.className='state'+(ready?' on':''); }
+  }
+  paintDot();
+
+  elEye.addEventListener('click',function(){
+    var p=elKey.type==='password';
+    elKey.type=p?'text':'password';
+    elEye.textContent=p?'隐藏':'显示';
+  });
+
+  $('gearBtn').addEventListener('click',function(){
+    elCfg.open=true;
+    elCfg.scrollIntoView({behavior:'smooth',block:'center'});
+    setTimeout(function(){elKey.focus();},320);
+  });
+
+  /* ---------- 解析 ---------- */
+  function parseLinks(text){
+    if(!text) return [];
+    var found=text.match(/https?:\/\/[^\s"'<>\u3000-\u303f\uff00-\uffef]+/g)||[];
+    var seen={},out=[];
+    found.forEach(function(raw){
+      var clean=raw.replace(/[),.;，。、）】》]+$/,'');
+      if(seen[clean]) return;
+      seen[clean]=1;
+
+      var item={raw:clean,ok:false,host:'',taskId:'',target:'',err:''};
+      var u;
+      try{u=new URL(clean);}catch(e){item.err='这不像一条链接';out.push(item);return;}
+      item.host=u.host;
+
+      var direct=u.pathname.match(/\/video_generation\/([^\/]+)\/content\/?$/);
+      if(direct){
+        item.taskId=direct[1];
+        item.target=u.origin+u.pathname.replace(/\/$/,'');
+        item.ok=true;out.push(item);return;
+      }
+
+      var m=u.pathname.match(/\/video_generation\/([^\/]+)/);
+      var taskId=m?m[1]:'';
+      if(!taskId){
+        var m2=clean.match(/(task_[A-Za-z0-9]+)/);
+        if(m2) taskId=m2[1];
+        else{
+          var m3=clean.match(/video_generation\/([A-Za-z0-9_\-]{8,})/);
+          if(m3) taskId=m3[1];
+        }
+      }
+      if(!taskId){item.err='链接里没找到任务号';out.push(item);return;}
+
+      var ver=(u.pathname.match(/\/(v\d+)\//)||[,'v2'])[1];
+      item.taskId=taskId;
+      item.target=u.origin+'/'+ver+'/video_generation/'+taskId+'/content';
+      item.ok=true;
+      out.push(item);
+    });
+    return out;
+  }
+
+  function esc(s){
+    return String(s==null?'':s).replace(/[&<>"']/g,function(c){
+      return {'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c];
+    });
+  }
+
+  function renderParsed(){
+    if(!parsedList.length){elParsed.innerHTML='';return;}
+    var html='';
+    parsedList.forEach(function(it){
+      if(it.ok){
+        var id=it.taskId;
+        var show=id.length>26?(id.slice(0,17)+'…'+id.slice(-6)):id;
+        html+='<div class="res">'
+          +'<div class="line"><span class="k">站点</span><span class="v">'+esc(it.host)+'</span></div>'
+          +'<div class="line"><span class="k">任务</span><span class="v em tap" data-full="'+esc(id)+'" title="点击复制">'+esc(show)+'</span></div>'
+          +'</div>';
+      }else{
+        html+='<div class="res bad">'
+          +'<div class="line"><span class="k">读不出</span><span class="v">'+esc(it.err)+'</span></div>'
+          +'</div>';
+      }
+    });
+    elParsed.innerHTML=html;
+  }
+
+  elParsed.addEventListener('click',function(e){
+    var el=e.target.closest?e.target.closest('.tap'):null;
+    if(!el) return;
+    var full=el.getAttribute('data-full')||'';
+    if(!full) return;
+    var old=el.textContent;
+    navigator.clipboard.writeText(full).then(function(){
+      el.textContent='已复制';
+      setTimeout(function(){el.textContent=old;},1100);
+    }).catch(function(){});
+  });
+
+  var t=null;
+  elLinks.addEventListener('input',function(){
+    clearTimeout(t);
+    t=setTimeout(function(){
+      parsedList=parseLinks(elLinks.value);
+      renderParsed();
+      stat('','');
+    },170);
+  });
+
+  /* ---------- 状态 ---------- */
+  function stat(msg,kind,meta){
+    if(!msg){elStat.className='stat';elStat.innerHTML='';return;}
+    elStat.className='stat on '+(kind||'');
+    elStat.innerHTML=esc(msg)+(meta?'<div class="meta">'+esc(meta)+'</div>':'');
+  }
+  function prog(loaded,total){
+    elProg.classList.add('on');
+    elProgInner.style.width=(total?Math.min(100,loaded/total*100):100).toFixed(1)+'%';
+  }
+  function progReset(){elProg.classList.remove('on');elProgInner.style.width='0';}
+
+  function human(b){
+    if(!b&&b!==0) return '';
+    if(b<1024) return b+' B';
+    if(b<1048576) return (b/1024).toFixed(0)+' KB';
+    return (b/1048576).toFixed(2)+' MB';
+  }
+
+  /* ---------- 下载 ---------- */
+  function saveBlob(blob,name){
+    var url=URL.createObjectURL(blob);
+    var a=document.createElement('a');
+    a.href=url;a.download=name;
+    document.body.appendChild(a);a.click();
+    setTimeout(function(){document.body.removeChild(a);URL.revokeObjectURL(url);},4000);
+  }
+
+  function fetchVia(target,key,onProg){
+    var proxy=elWorker.value.trim();
+    if(!proxy) return Promise.reject(new Error('还没填代理地址'));
+    if(!/^https?:\/\//i.test(proxy)) return Promise.reject(new Error('代理地址要以 http 开头'));
+
+    return fetch(proxy,{method:'POST',headers:{'X-Target':target,'X-Api-Key':key}}).then(function(res){
+      if(!res.ok){
+        return res.text().then(function(txt){
+          var detail=txt;
+          try{var j=JSON.parse(txt);detail=j.detail||j.error||txt;}catch(e){}
+          throw new Error('代理返回 '+res.status+'。'+String(detail).slice(0,260));
+        });
+      }
+      var total=parseInt(res.headers.get('X-Total-Size')||'0',10);
+      if(!res.body||!res.body.getReader){
+        return res.blob().then(function(b){onProg(b.size,b.size);return b;});
+      }
+      var reader=res.body.getReader(),chunks=[],loaded=0;
+      return (function pump(){
+        return reader.read().then(function(r){
+          if(r.done) return new Blob(chunks,{type:'video/mp4'});
+          chunks.push(r.value);loaded+=r.value.length;
+          onProg(loaded,total);
+          return pump();
+        });
+      })();
+    });
+  }
+
+  elGo.addEventListener('click',function(){
+    var key=elKey.value.trim();
+    var list=parsedList.filter(function(x){return x.ok;});
+    if(!key){stat('先把 API Key 填上','err');elCfg.open=true;elKey.focus();return;}
+    if(!elWorker.value.trim()){stat('还没有代理地址','err');elCfg.open=true;elWorker.focus();return;}
+    if(!list.length){stat('先贴一条能认出来的链接','err');return;}
+
+    elGo.disabled=true;elGo.classList.add('busy');progReset();
+    var done=0;
+
+    (function next(){
+      if(done>=list.length){
+        stat('取回来了，'+done+' 个文件','ok');
+        elGo.disabled=false;elGo.classList.remove('busy');elGo.textContent='开始下载';
+        setTimeout(progReset,1200);
+        return;
+      }
+      var it=list[done];
+      elGo.textContent=list.length>1?('下载中 '+(done+1)+'/'+list.length):'下载中…';
+      stat('正在取 '+it.taskId,'');
+      fetchVia(it.target,key,function(l,tot){
+        prog(l,tot);
+        stat('正在取 '+it.taskId,'',tot?human(l)+' / '+human(tot):human(l));
+      }).then(function(blob){
+        if(!blob||!blob.size) throw new Error('内容是空的');
+        saveBlob(blob,it.taskId+'.mp4');
+        addHist({taskId:it.taskId,host:it.host,size:blob.size,at:Date.now()});
+        done++;
+        stat('第 '+done+' 个好了，'+human(blob.size),'ok');
+        setTimeout(next,650);
+      }).catch(function(err){
+        stat('失败。'+err.message,'err','检查 Key、代理地址，或者用「直接打开」看服务端怎么回');
+        elGo.disabled=false;elGo.classList.remove('busy');elGo.textContent='开始下载';
+      });
+    })();
+  });
+
+  elOpen.addEventListener('click',function(){
+    var list=parsedList.filter(function(x){return x.ok;});
+    if(!list.length){stat('先贴一条链接','err');return;}
+    if(list.length>1){stat('一次只能打开一个，你贴了 '+list.length+' 条','err');return;}
+    window.open(list[0].target,'_blank','noopener');
+    stat('已在新标签打开。这样不带密钥，多半会被挡回来','');
+  });
+
+  $('pasteBtn').addEventListener('click',function(){
+    if(navigator.clipboard&&navigator.clipboard.readText){
+      navigator.clipboard.readText().then(function(v){
+        elLinks.value=v;elLinks.dispatchEvent(new Event('input'));
+      }).catch(function(){stat('读剪贴板被拒了，长按手动粘吧','err');});
+    }else{
+      stat('这个浏览器不给读剪贴板，长按手动粘吧','err');
+    }
+  });
+
+  $('clearBtn').addEventListener('click',function(){
+    elLinks.value='';parsedList=[];renderParsed();stat('','');progReset();
+  });
+
+  /* ---------- 历史 ---------- */
+  function hist(){
+    try{return JSON.parse(lsGet(LS_HIS,'[]'))||[];}catch(e){return [];}
+  }
+  function addHist(rec){
+    var h=hist();h.unshift(rec);h=h.slice(0,20);
+    lsSet(LS_HIS,JSON.stringify(h));renderHist();
+  }
+  function renderHist(){
+    var h=hist();
+    if(!h.length){$('histBox').style.display='none';return;}
+    $('histBox').style.display='block';
+    $('histList').innerHTML=h.map(function(r){
+      var d=new Date(r.at);
+      var tm=(d.getMonth()+1)+'/'+d.getDate()+' '+String(d.getHours()).padStart(2,'0')+':'+String(d.getMinutes()).padStart(2,'0');
+      var id=r.taskId||'';
+      var show=id.length>22?id.slice(0,14)+'…'+id.slice(-5):id;
+      return '<div class="row"><span class="id">'+esc(show)+'</span>'
+        +'<span class="sz">'+human(r.size)+'</span>'
+        +'<span class="tm">'+tm+'</span></div>';
+    }).join('');
+  }
+  renderHist();
+
+  /* ---------- 首次提示 ---------- */
+  if(!elWorker.value||!elKey.value){
+    elCfg.open=true;
+    if(!elWorker.value){
+      stat('第一次用，先把代理地址和密钥填上，只需要一次','');
+    }
+  }
+
+})();
+</script>
+</body>
+</html>
