@@ -89,7 +89,8 @@
 
   /* ---------- 识别结果 ---------- */
   #parsed{margin-top:26px}
-  .res{border-left:1px solid var(--gold);padding:2px 0 2px 16px;margin-bottom:18px}
+  .res{border-left:1px solid var(--gold);padding:2px 0 2px 16px;margin-bottom:18px;
+       animation:slideIn .34s cubic-bezier(.22,.7,.28,1) both}
   .res.bad{border-left-color:var(--bad)}
   .res .line{display:flex;gap:14px;font-size:12.5px;line-height:1.9}
   .res .k{color:#5f5f68;flex:0 0 52px}
@@ -99,19 +100,27 @@
   .res .v.em{color:var(--text)}
 
   /* ---------- 设置 ---------- */
-  details{margin-top:52px;border-top:1px solid var(--line);padding-top:22px}
-  summary{
-    list-style:none;cursor:pointer;user-select:none;
-    font-size:12.5px;letter-spacing:.06em;color:var(--muted);transition:color .2s;
-    display:flex;align-items:center;gap:8px;
+  .fold{margin-top:52px;border-top:1px solid var(--line);padding-top:22px}
+  .foldhead{
+    display:flex;align-items:center;width:100%;background:none;border:none;padding:0;
+    font-family:inherit;font-size:12.5px;letter-spacing:.06em;color:var(--muted);
+    cursor:pointer;text-align:left;transition:color .2s;
   }
-  summary::-webkit-details-marker{display:none}
-  summary:hover{color:var(--text)}
-  summary::after{content:"›";font-size:15px;color:#4a4a52;transition:transform .25s;margin-left:8px}
-  .state{margin-left:auto;font-size:11.5px;letter-spacing:.04em;color:#5f5f68;transition:color .25s}
-  .state.on{color:var(--gold)}
-  details[open] summary::after{transform:rotate(90deg)}
-  .cfg{margin-top:24px}
+  .foldhead:hover{color:var(--text)}
+  .foldhead .state{margin-left:auto;font-size:11.5px;letter-spacing:.04em;color:#5f5f68;transition:color .25s}
+  .foldhead .state.on{color:var(--gold)}
+  .chev{font-size:15px;color:#4a4a52;margin-left:10px;display:inline-block;
+        transition:transform .38s cubic-bezier(.22,.7,.28,1),color .2s}
+  .fold.open .chev{transform:rotate(90deg);color:var(--gold)}
+  .foldbody{
+    display:grid;grid-template-rows:0fr;
+    transition:grid-template-rows .42s cubic-bezier(.22,.7,.28,1);
+  }
+  .fold.open .foldbody{grid-template-rows:1fr}
+  .foldbody>.inner{min-height:0;overflow:hidden}
+  .cfg{padding-top:0;opacity:0;transform:translateY(-5px);
+       transition:opacity .3s ease .06s,transform .38s ease .06s,padding-top .42s cubic-bezier(.22,.7,.28,1)}
+  .fold.open .cfg{padding-top:24px;opacity:1;transform:none}
   .cfg .grp{margin-bottom:22px}
   .cfg .grp:last-child{margin-bottom:0}
   .cfg .hint{font-size:12px;color:#4f4f57;margin-top:9px;line-height:1.65}
@@ -140,15 +149,16 @@
   .under{display:flex;justify-content:center;margin-top:14px}
 
   /* ---------- 状态 ---------- */
-  .prog{height:2px;background:var(--line);margin-top:26px;overflow:hidden;display:none}
-  .prog.on{display:block}
+  .prog{height:0;background:transparent;margin-top:0;overflow:hidden;
+        transition:height .32s ease,margin-top .32s ease,background .32s ease}
+  .prog.on{height:2px;margin-top:26px;background:var(--line)}
   .prog i{display:block;height:100%;width:0;background:var(--gold);transition:width .25s ease}
 
   .stat{
     margin-top:18px;font-size:13px;line-height:1.65;color:var(--body);
     display:none;word-break:break-word;
   }
-  .stat.on{display:block}
+  .stat.on{display:block;animation:slideIn .3s ease both}
   .stat.ok{color:var(--ok)}
   .stat.err{color:var(--bad)}
   .stat .meta{color:#55555d;font-size:12px;margin-top:4px}
@@ -159,7 +169,11 @@
   .hist .row{
     display:flex;align-items:baseline;gap:14px;
     padding:11px 0;border-bottom:1px solid #16161a;font-size:12.5px;
+    animation:slideIn .35s ease both;
   }
+  .hist .row:nth-child(1){animation-delay:0s}
+  .hist .row:nth-child(2){animation-delay:.04s}
+  .hist .row:nth-child(3){animation-delay:.08s}
   .hist .row:last-child{border-bottom:none}
   .hist .id{font-family:var(--mono);color:#8e8e94;flex:1;word-break:break-all;font-size:11.5px}
   .hist .sz,.hist .tm{color:#4f4f57;font-family:var(--mono);font-size:11px;white-space:nowrap}
@@ -168,6 +182,7 @@
 
   /* ---------- 入场 ---------- */
   @keyframes rise{from{opacity:0;transform:translateY(7px)}to{opacity:1;transform:none}}
+  @keyframes slideIn{from{opacity:0;transform:translateY(-5px)}to{opacity:1;transform:none}}
   header,h1,.lede,.field,.go,.under{animation:rise .55s cubic-bezier(.22,.7,.28,1) backwards}
   header{animation-delay:.02s}
   h1{animation-delay:.06s}
@@ -201,8 +216,13 @@
 
   <div id="parsed"></div>
 
-  <details id="cfgBox">
-    <summary>密钥与代理<span class="state" id="cfgState">待填写</span></summary>
+  <div class="fold" id="cfgBox">
+    <button class="foldhead" id="cfgToggle" type="button">
+      <span>密钥与代理</span>
+      <span class="state" id="cfgState">待填写</span>
+      <span class="chev">›</span>
+    </button>
+    <div class="foldbody"><div class="inner">
     <div class="cfg">
       <div class="grp">
         <label class="lbl" for="apiKey">API Key</label>
@@ -217,7 +237,8 @@
         <div class="hint">浏览器跨域会被拦，需要一个转发。部署方法见仓库 README，填一次就记住了。</div>
       </div>
     </div>
-  </details>
+    </div></div>
+  </div>
 
   <button class="go" id="goBtn">开始下载</button>
   <div class="under">
@@ -271,10 +292,16 @@
     elEye.textContent=p?'隐藏':'显示';
   });
 
+  function openCfg(v){ elCfg.classList.toggle('open', !!v); }
+
   $('gearBtn').addEventListener('click',function(){
-    elCfg.open=true;
-    elCfg.scrollIntoView({behavior:'smooth',block:'center'});
-    setTimeout(function(){elKey.focus();},320);
+    openCfg(true);
+    setTimeout(function(){ elCfg.scrollIntoView({behavior:'smooth',block:'center'}); },60);
+    setTimeout(function(){ elKey.focus(); },420);
+  });
+
+  $('cfgToggle').addEventListener('click',function(){
+    openCfg(!elCfg.classList.contains('open'));
   });
 
   /* ---------- 解析 ---------- */
@@ -428,8 +455,8 @@
   elGo.addEventListener('click',function(){
     var key=elKey.value.trim();
     var list=parsedList.filter(function(x){return x.ok;});
-    if(!key){stat('先把 API Key 填上','err');elCfg.open=true;elKey.focus();return;}
-    if(!elWorker.value.trim()){stat('还没有代理地址','err');elCfg.open=true;elWorker.focus();return;}
+    if(!key){stat('先把 API Key 填上','err');openCfg(true);elKey.focus();return;}
+    if(!elWorker.value.trim()){stat('还没有代理地址','err');openCfg(true);elWorker.focus();return;}
     if(!list.length){stat('先贴一条能认出来的链接','err');return;}
 
     elGo.disabled=true;elGo.classList.add('busy');progReset();
@@ -510,7 +537,7 @@
 
   /* ---------- 首次提示 ---------- */
   if(!elWorker.value||!elKey.value){
-    elCfg.open=true;
+    openCfg(true);
     if(!elWorker.value){
       stat('第一次用，先把代理地址和密钥填上，只需要一次','');
     }
