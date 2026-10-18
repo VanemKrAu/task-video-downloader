@@ -20,7 +20,7 @@ Worker 免费额度每天十万次请求，个人用绰绰有余，不花钱。
 
 ### 第一步，部署 Worker
 
-1. 打开 <https://dash.cloudflare.com/>，登录（就是之前开 R2 那个账号）
+1. 打开 <https://dash.cloudflare.com/>，登录。
 2. 左侧栏找到 **Workers & Pages**，点 **创建** / **Create application**，选 ** Workers**，起个名字，比如 `video-fetch`
 3. 进入代码编辑页，把仓库里 `worker.js` 的内容**全部替换**进去
 4. 右上角 **部署** / **Deploy**
