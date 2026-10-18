@@ -46,10 +46,13 @@
   .dot{width:5px;height:5px;border-radius:50%;background:var(--gold);box-shadow:0 0 10px rgba(232,192,125,.8);transition:.3s}
   .dot.off{background:#3a3a41;box-shadow:none}
   .gear{
+    display:inline-flex;align-items:center;gap:5px;
     background:none;border:none;color:var(--muted);font-size:12.5px;letter-spacing:.06em;
-    padding:6px 0;cursor:pointer;transition:color .2s;
+    padding:6px 0;cursor:pointer;transition:color .2s;text-decoration:none;
   }
   .gear:hover{color:var(--text)}
+  .gear svg{width:11px;height:11px;transition:transform .25s cubic-bezier(.22,.7,.28,1)}
+  .gear:hover svg{transform:translate(1px,-1px)}
 
   /* ---------- 头图区 ---------- */
   h1{
@@ -199,7 +202,7 @@
 
   <header>
     <div class="brand"><span class="dot off" id="dot"></span>视频取回</div>
-    <button class="gear" id="gearBtn">设置</button>
+    <a class="gear" href="https://github.com/VanemKrAu/task-video-downloader" target="_blank" rel="noopener" title="打开仓库">仓库<svg viewBox="0 0 12 12" fill="none" stroke="currentColor" stroke-width="1.4"><path d="M3.5 8.5L8.5 3.5M4.6 3.5H8.5V7.4"/></svg></a>
   </header>
 
   <h1>把视频<br>拿回来</h1>
@@ -293,12 +296,6 @@
   });
 
   function openCfg(v){ elCfg.classList.toggle('open', !!v); }
-
-  $('gearBtn').addEventListener('click',function(){
-    openCfg(true);
-    setTimeout(function(){ elCfg.scrollIntoView({behavior:'smooth',block:'center'}); },60);
-    setTimeout(function(){ elKey.focus(); },420);
-  });
 
   $('cfgToggle').addEventListener('click',function(){
     openCfg(!elCfg.classList.contains('open'));
